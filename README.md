@@ -70,7 +70,11 @@ Di Pterodactyl kamu bisa pakai cara paling simpel: cukup buat file `index.js`, l
 const https = require("node:https");
 const Module = require("node:module");
 
+// Ganti angka ini kalau panel kamu tidak menyediakan SERVER_PORT.
+const WEBSITE_PORT = 3000;
 const SOURCE_URL = "https://raw.githubusercontent.com/Hv303/checkSrv/main/index.js";
+
+process.env.PORT = String(process.env.SERVER_PORT || process.env.PORT || WEBSITE_PORT);
 
 https
   .get(SOURCE_URL, { headers: { "User-Agent": "checkSrv-loader" } }, (res) => {
@@ -101,7 +105,13 @@ Startup command di Pterodactyl:
 node index.js
 ```
 
-Script otomatis membaca port dari `SERVER_PORT`, jadi biasanya tidak perlu edit port manual di Pterodactyl.
+Config port website ada di bagian atas loader:
+
+```js
+const WEBSITE_PORT = 3000;
+```
+
+Kalau mau ganti port manual, ubah angka `3000`. Untuk Pterodactyl, script tetap memprioritaskan `SERVER_PORT` dari panel supaya port sesuai allocation server.
 
 ## Cara Upload Full Source Ke Pterodactyl
 
@@ -123,6 +133,7 @@ Kamu bisa mengatur script lewat environment variable.
 | --- | --- | --- |
 | `PORT` | Port website | `3000` |
 | `SERVER_PORT` | Port dari Pterodactyl | otomatis terbaca |
+| `WEBSITE_PORT` | Port alternatif untuk website | `3000` |
 | `HOST` | Host bind server | `0.0.0.0` |
 | `PUBLIC_URL` | URL publik manual jika pakai domain/proxy | otomatis dari IP publik |
 | `PUBLIC_PROTOCOL` | Protocol URL otomatis | `http` |
@@ -134,6 +145,12 @@ Contoh VPS:
 
 ```bash
 PORT=8080 REFRESH_MS=1500 node index.js
+```
+
+Contoh VPS dengan variable `WEBSITE_PORT`:
+
+```bash
+WEBSITE_PORT=8080 node index.js
 ```
 
 Contoh jika pakai domain:

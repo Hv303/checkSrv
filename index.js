@@ -12,7 +12,7 @@ const APP_NAME = 'checkSrv';
 const APP_VERSION = '1.0.0';
 
 const CONFIG = Object.freeze({
-  port: parsePort(process.env.PORT || process.env.SERVER_PORT || process.env.APP_PORT || process.env.WEB_PORT, 3000),
+  port: parsePort(process.env.SERVER_PORT || process.env.PORT || process.env.WEBSITE_PORT || process.env.APP_PORT || process.env.WEB_PORT, 3000),
   host: process.env.HOST || process.env.SERVER_HOST || '0.0.0.0',
   publicUrl: String(process.env.PUBLIC_URL || process.env.APP_URL || '').trim(),
   publicProtocol: String(process.env.PUBLIC_PROTOCOL || 'http').replace(/:$/, ''),
