@@ -1,0 +1,22 @@
+{
+  "name": "checksrv",
+  "version": "1.0.0",
+  "description": "Realtime public server monitor dashboard for VPS and Pterodactyl.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js && node --check pterodactyl-loader.js"
+  },
+  "keywords": [
+    "server-monitor",
+    "pterodactyl",
+    "vps",
+    "nodejs",
+    "tailwind"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
