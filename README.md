@@ -1,33 +1,44 @@
+<div align="center">
+
 # checkSrv
 
-checkSrv adalah script Node.js untuk menampilkan informasi server lewat website yang rapi dan realtime.
+Realtime server monitor dashboard untuk VPS, dedicated server, container, dan Pterodactyl.
 
-Cocok untuk VPS, dedicated server, container, dan Pterodactyl. Backend-nya tidak butuh database dan tidak butuh dependency npm tambahan. Cukup jalankan `node index.js`.
+[![Node.js](https://img.shields.io/badge/Node.js-16%2B-3c873a?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Pterodactyl](https://img.shields.io/badge/Pterodactyl-Ready-1f2937?style=for-the-badge)](https://pterodactyl.io/)
+[![Tailwind](https://img.shields.io/badge/Tailwind-CDN-38bdf8?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Realtime](https://img.shields.io/badge/Realtime-SSE-10b981?style=for-the-badge)](#endpoint)
 
-## Fitur
+**GitHub:** https://github.com/Hv303/checkSrv
 
-- Menampilkan IP publik server.
-- Menampilkan lokasi IP publik.
-- Menampilkan provider/ISP dan ASN jika API geo berhasil membaca datanya.
-- Menampilkan port yang sedang dipakai.
-- Menampilkan CPU model, jumlah core, OS, kernel, hostname, Node.js version, dan PID.
-- Menampilkan RAM, disk, CPU usage, network upload/download secara realtime.
-- Website responsive untuk desktop dan HP.
-- Tombol copy untuk URL, IP, port, dan endpoint API.
-- Realtime memakai SSE, jadi browser menerima update tanpa reload.
-- Log terminal dibuat singkat supaya tidak terlalu ramai.
+</div>
 
-## Tampilan
+## Tentang Project
 
-UI dibuat dengan tema dark seperti dashboard modern: clean, card-based, mirip gaya ChatGPT/shadcn, dan full Tailwind lewat CDN.
+`checkSrv` adalah script Node.js ringan untuk menampilkan informasi server lewat website yang rapi, responsive, dan realtime.
 
-Icons memakai Lucide CDN. Kalau server/browser tidak punya akses internet ke CDN, data tetap jalan, hanya icons/font eksternal yang mungkin tidak muncul.
+Cukup jalankan `node index.js`, lalu buka `IP_PUBLIC:PORT` di browser. Dashboard akan menampilkan IP publik, lokasi IP, provider/ISP, spesifikasi server, CPU/RAM/disk usage, network traffic, uptime, runtime Node.js, dan tombol copy cepat.
 
-## Cara Jalan Di VPS
+## Fitur Utama
 
-Pastikan Node.js sudah ada. Disarankan Node.js 18 atau lebih baru, tapi script ini dibuat tetap ringan untuk Node.js 16+.
+| Fitur | Keterangan |
+| --- | --- |
+| Public IP | Menampilkan IP publik server |
+| Geo IP | Menampilkan lokasi, timezone, ISP/provider, ASN |
+| Server Spec | CPU model, core, RAM, disk, OS, kernel, hostname |
+| Realtime Usage | CPU, RAM, disk, network upload/download realtime |
+| Copy Button | Copy URL, IP, port, dan endpoint dengan sekali klik |
+| Responsive UI | Tampilan nyaman di HP, tablet, dan desktop |
+| No Database | Tidak butuh database dan tidak butuh setup ribet |
+| Pterodactyl Ready | Bisa jalan dari panel Pterodactyl |
+
+## Quick Start VPS
+
+Clone repo:
 
 ```bash
+git clone https://github.com/Hv303/checkSrv.git
+cd checkSrv
 node index.js
 ```
 
@@ -39,7 +50,7 @@ Kalau mau ganti port:
 PORT=8080 node index.js
 ```
 
-Setelah jalan, buka:
+Lalu buka di browser:
 
 ```txt
 http://IP_PUBLIC_SERVER:PORT
@@ -51,179 +62,99 @@ Contoh:
 http://123.123.123.123:8080
 ```
 
-## Cara Jalan Di Pterodactyl
+## Quick Start Pterodactyl
 
-Ada dua cara. Pilih yang paling enak buat kamu.
-
-## Cara 1: Upload Source Lengkap
-
-Upload semua file repo ini ke server Pterodactyl, lalu startup command:
-
-```bash
-node index.js
-```
-
-Biasanya Pterodactyl sudah memberi port lewat variable `SERVER_PORT`. Script ini otomatis membaca `SERVER_PORT`, jadi kamu tidak harus edit kode.
-
-## Cara 2: Di Pterodactyl Cukup Buat index.js Loader
-
-Cara ini cocok kalau source code full ada di GitHub, lalu di Pterodactyl kamu hanya ingin membuat satu file `index.js` kecil.
-
-1. Upload project ini ke GitHub.
-2. Buka file `index.js` di GitHub.
-3. Klik tombol `Raw`.
-4. Copy URL raw-nya.
-5. Di Pterodactyl, buat file `index.js` dengan isi seperti ini:
+Di Pterodactyl kamu bisa pakai cara paling simpel: cukup buat file `index.js`, lalu paste kode loader di bawah.
 
 ```js
-'use strict';
+const https = require("node:https");
+const Module = require("node:module");
 
-const https = require('node:https');
-const http = require('node:http');
-const Module = require('node:module');
-const { URL } = require('node:url');
+const SOURCE_URL = "https://raw.githubusercontent.com/Hv303/checkSrv/main/index.js";
 
-const SOURCE_URL = process.env.CHECKSRV_SOURCE || 'https://raw.githubusercontent.com/USERNAME/REPOSITORY/main/index.js';
+https
+  .get(SOURCE_URL, { headers: { "User-Agent": "checkSrv-loader" } }, (res) => {
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      console.error("Gagal download source. HTTP " + res.statusCode);
+      process.exit(1);
+    }
 
-function download(url, redirects = 0) {
-  return new Promise((resolve, reject) => {
-    const parsed = new URL(url);
-    const client = parsed.protocol === 'http:' ? http : https;
-    const req = client.get(parsed, (res) => {
-      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirects < 5) {
-        res.resume();
-        resolve(download(new URL(res.headers.location, parsed).toString(), redirects + 1));
-        return;
-      }
-      if (res.statusCode < 200 || res.statusCode >= 300) {
-        res.resume();
-        reject(new Error('HTTP ' + res.statusCode));
-        return;
-      }
-      let code = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk) => { code += chunk; });
-      res.on('end', () => resolve(code));
+    let code = "";
+    res.setEncoding("utf8");
+    res.on("data", (chunk) => (code += chunk));
+    res.on("end", () => {
+      const remoteModule = new Module(SOURCE_URL, module);
+      remoteModule.filename = SOURCE_URL;
+      remoteModule.paths = Module._nodeModulePaths(process.cwd());
+      remoteModule._compile(code, SOURCE_URL);
     });
-    req.setTimeout(15000, () => req.destroy(new Error('Timeout download source')));
-    req.on('error', reject);
-  });
-}
-
-download(SOURCE_URL)
-  .then((code) => {
-    const remoteModule = new Module(SOURCE_URL, module.parent || module);
-    remoteModule.filename = SOURCE_URL;
-    remoteModule.paths = Module._nodeModulePaths(process.cwd());
-    remoteModule._compile(code, SOURCE_URL);
   })
-  .catch((err) => {
-    console.error('Loader gagal:', err.message);
+  .on("error", (err) => {
+    console.error("Loader gagal:", err.message);
     process.exit(1);
   });
 ```
 
-Ganti bagian ini:
-
-```txt
-https://raw.githubusercontent.com/USERNAME/REPOSITORY/main/index.js
-```
-
-menjadi URL raw GitHub kamu.
-
-Contoh bentuk URL-nya:
-
-```txt
-https://raw.githubusercontent.com/nama-kamu/checksrv/main/index.js
-```
-
-Lalu startup command tetap:
+Startup command di Pterodactyl:
 
 ```bash
 node index.js
 ```
 
-## Cara Lebih Rapi Untuk Loader
+Script otomatis membaca port dari `SERVER_PORT`, jadi biasanya tidak perlu edit port manual di Pterodactyl.
 
-Kalau tidak mau edit kode loader, kamu bisa isi variable environment di Pterodactyl:
+## Cara Upload Full Source Ke Pterodactyl
 
-```txt
-CHECKSRV_SOURCE=https://raw.githubusercontent.com/nama-kamu/checksrv/main/index.js
+Kalau kamu tidak mau pakai loader, upload semua file repo ini ke Pterodactyl.
+
+Jalankan:
+
+```bash
+node index.js
 ```
 
-Lalu file `index.js` di Pterodactyl bisa memakai isi dari `pterodactyl-loader.js`.
+Cara ini cocok kalau kamu ingin semua source tersimpan langsung di server panel.
 
-## Variable Config
+## Config Environment
 
 Kamu bisa mengatur script lewat environment variable.
 
 | Variable | Fungsi | Default |
 | --- | --- | --- |
 | `PORT` | Port website | `3000` |
-| `SERVER_PORT` | Port dari Pterodactyl, otomatis terbaca | kosong |
+| `SERVER_PORT` | Port dari Pterodactyl | otomatis terbaca |
 | `HOST` | Host bind server | `0.0.0.0` |
-| `PUBLIC_URL` | URL publik manual kalau pakai domain/proxy | otomatis dari IP publik |
+| `PUBLIC_URL` | URL publik manual jika pakai domain/proxy | otomatis dari IP publik |
 | `PUBLIC_PROTOCOL` | Protocol URL otomatis | `http` |
-| `REFRESH_MS` | Interval realtime dashboard | `2000` |
-| `GEO_TIMEOUT_MS` | Timeout API IP geo | `3000` |
-| `DISK_PATH` | Path disk yang dicek | folder tempat script jalan |
-| `CHECKSRV_SOURCE` | URL raw GitHub untuk loader | kosong |
+| `REFRESH_MS` | Interval update realtime | `2000` |
+| `GEO_TIMEOUT_MS` | Timeout API lokasi IP | `3000` |
+| `DISK_PATH` | Path disk yang dicek | folder script berjalan |
 
-Contoh:
+Contoh VPS:
 
 ```bash
 PORT=8080 REFRESH_MS=1500 node index.js
 ```
 
-Kalau kamu pakai domain atau reverse proxy:
+Contoh jika pakai domain:
 
 ```bash
 PUBLIC_URL=https://status.domainkamu.com node index.js
 ```
 
-## Endpoint API
+## Endpoint
 
-Website utama:
-
-```txt
-/
-```
-
-Data lengkap server:
-
-```txt
-/api/summary
-```
-
-Data realtime saja:
-
-```txt
-/api/realtime
-```
-
-Stream realtime SSE:
-
-```txt
-/events
-```
-
-Health check:
-
-```txt
-/healthz
-```
-
-## Catatan Penting
-
-- Lokasi IP publik bukan lokasi GPS fisik. Itu hasil pembacaan dari database IP geo.
-- Kalau provider IP geo sedang limit/down, script tetap jalan, hanya lokasi/provider bisa tampil `unknown`.
-- Disk usage memakai command `df`, jadi paling akurat di Linux. Ini sesuai target VPS dan Pterodactyl.
-- Kalau Pterodactyl memakai reverse proxy atau domain khusus, lebih bagus isi `PUBLIC_URL` supaya URL yang tampil di dashboard sesuai alamat yang kamu pakai.
-- Loader GitHub akan mengeksekusi kode dari URL yang kamu isi. Pakai raw URL dari repo milikmu sendiri.
+| Endpoint | Fungsi |
+| --- | --- |
+| `/` | Dashboard website |
+| `/api/summary` | Data lengkap server dalam JSON |
+| `/api/realtime` | Data realtime usage dalam JSON |
+| `/events` | Stream realtime SSE |
+| `/healthz` | Health check |
 
 ## Log Terminal
 
-Saat server berhasil jalan, log dibuat singkat seperti ini:
+Log dibuat singkat supaya terminal tetap bersih.
 
 ```txt
 ==========================================================
@@ -238,16 +169,28 @@ Disk     : 12.4 GB / 50.0 GB (24.8%)
 ==========================================================
 ```
 
-## Development Check
+## Catatan
 
-Untuk cek sintaks:
+- Lokasi IP berasal dari database IP geo, jadi bukan lokasi GPS fisik server.
+- Jika API IP geo sedang limit/down, dashboard tetap jalan, tetapi lokasi/provider bisa tampil `unknown`.
+- Disk usage memakai command `df`, paling cocok untuk Linux VPS dan Pterodactyl.
+- Jika memakai domain atau reverse proxy, isi `PUBLIC_URL` supaya URL di dashboard sesuai alamat domain.
+- Loader Pterodactyl menjalankan kode dari raw GitHub. Pastikan URL raw mengarah ke repo yang kamu percaya.
+
+## Development
+
+Cek sintaks:
 
 ```bash
 npm run check
 ```
 
-Untuk menjalankan:
+Jalankan project:
 
 ```bash
 npm start
 ```
+
+## License
+
+MIT
